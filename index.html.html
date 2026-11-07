@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Highway Speedster - Ultimate Arcade Racer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .glow-cyan {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 0.5);
+        }
+        .box-glow {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4), inset 0 0 15px rgba(6, 182, 212, 0.2);
+            border: 2px solid rgba(6, 182, 212, 0.6);
+        }
+
+        .touch-btn {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(6, 182, 212, 0.5);
+            backdrop-filter: blur(4px);
+            transition: all 0.1s ease;
+        }
+        .touch-btn:active {
+            background: rgba(6, 182, 212, 0.4);
+            transform: scale(0.92);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between items-center relative">
+
+    <!-- CANVAS CONTAINER -->
+    <div class="relative w-full h-full flex justify-center items-center">
+        <canvas id="gameCanvas" class="w-full h-full block cursor-default"></canvas>
+    </div>
+
+    <!-- HUD OVERLAY -->
+    <div id="hud" class="absolute top-0 left-0 w-full p-4 md:p-6 z-30 pointer-events-none flex justify-between items-start hidden">
+        <!-- Speed & Fuel & Health -->
+        <div class="flex flex-col gap-2 w-48 sm:w-60">
+            <!-- 3-Hit Health System (Hearts) -->
+            <div class="flex justify-between items-center font-orbitron text-xs text-red-400 font-bold">
+                <span><i class="fa-solid fa-car-burst mr-1"></i> CAR CONDITION</span>
+                <div id="lives-container" class="flex gap-1.5 text-red-500 text-sm">
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center font-orbitron text-xs text-cyan-400">
+                <span><i class="fa-solid fa-gauge-high mr-1"></i> SPEED</span>
+                <span id="speed-display" class="text-white text-sm font-bold">0 KM/H</span>
+            </div>
+            <div class="w-full bg-slate-950 h-3 border border-cyan-500/50 rounded-full overflow-hidden p-0.5">
+                <div id="speed-bar" class="h-full bg-gradient-to-r from-cyan-400 via-yellow-400 to-red-500 rounded-full transition-all duration-75" style="width: 0%;"></div>
+            </div>
+
+            <div class="flex justify-between items-center font-orbitron text-xs text-emerald-400 mt-1">
+                <span><i class="fa-solid fa-gas-pump mr-1"></i> FUEL</span>
+                <span id="fuel-text" class="text-white text-xs">100%</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden p-0.5 border border-emerald-500/50">
+                <div id="fuel-bar" class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all" style="width: 100%;"></div>
+            </div>
+
+            <div id="shield-hud" class="flex justify-between items-center font-orbitron text-xs text-pink-400 mt-1 opacity-40">
+                <span><i class="fa-solid fa-shield-halved mr-1"></i> SHIELD</span>
+                <span id="shield-text">OFFLINE</span>
+            </div>
+
+            <!-- Magnet HUD with Loader Animation -->
+            <div id="magnet-hud" class="flex flex-col gap-1 font-orbitron text-xs text-purple-400 mt-1 opacity-40">
+                <div class="flex justify-between items-center">
+                    <span><i class="fa-solid fa-magnet mr-1 animate-pulse"></i> MAGNET</span>
+                    <span id="magnet-timer-text">OFFLINE</span>
+                </div>
+                <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-purple-500/50 p-0.5">
+                    <div id="magnet-loader-bar" class="h-full bg-gradient-to-r from-purple-500 via-fuchsia-400 to-indigo-500 rounded-full transition-all duration-100" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coins Collected -->
+        <div class="flex items-center gap-2 font-orbitron text-yellow-400 text-sm sm:text-base bg-slate-900/90 px-4 py-2 rounded-xl border border-yellow-500/50 shadow-lg">
+            <i class="fa-solid fa-coins text-yellow-400 animate-bounce"></i>
+            <span id="coin-display" class="font-bold">0</span>
+        </div>
+
+        <!-- Score Stats -->
+        <div class="flex flex-col items-end font-orbitron">
+            <div class="text-xs text-cyan-400">SCORE</div>
+            <div id="score-display" class="text-2xl sm:text-3xl font-black text-white glow-cyan">00000</div>
+            <div class="text-[10px] text-gray-400 mt-0.5">BEST: <span id="hiscore-display" class="text-yellow-400">0</span></div>
+        </div>
+    </div>
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="main-menu" class="absolute inset-0 z-40 flex flex-col justify-start items-center p-4 sm:p-6 bg-slate-950/90 backdrop-blur-md overflow-y-auto max-h-screen">
+        <div class="box-glow p-6 sm:p-8 rounded-2xl max-w-md w-full flex flex-col items-center text-center bg-slate-900/90 my-auto">
+            <div class="inline-block p-3 sm:p-4 rounded-full bg-cyan-950 border border-cyan-500/50 mb-3 animate-pulse">
+                <i class="fa-solid fa-car text-3xl sm:text-4xl text-cyan-400"></i>
+            </div>
+            <h1 class="font-orbitron text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 glow-cyan mb-2">
+                HIGHWAY SPEEDSTER
+            </h1>
+            <p class="text-gray-300 text-xs sm:text-sm mb-4 sm:mb-6 font-medium">Drive continuously down the highway, dodge heavy traffic & collect fuel cans and coins!</p>
+
+            <!-- GARAGE / CAR SELECTION SYSTEM -->
+            <div class="w-full mb-4 sm:mb-6 bg-slate-950/80 p-3 sm:p-4 rounded-xl border border-cyan-500/40">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="font-orbitron text-xs text-cyan-400 font-bold"><i class="fa-solid fa-warehouse mr-1"></i> SUPERCARS GARAGE</span>
+                    <div class="flex items-center gap-1.5 font-orbitron text-xs text-yellow-400 font-bold bg-slate-900 px-2.5 py-1 rounded-lg border border-yellow-500/30">
+                        <i class="fa-solid fa-coins"></i>
+                        <span id="menu-total-coins">0</span>
+                    </div>
+                </div>
+
+                <!-- CAR SELECTOR CARD WITH IMAGE DISPLAY -->
+                <div class="flex items-center justify-between bg-slate-900 p-2.5 sm:p-3 rounded-xl border border-slate-700">
+                    <button id="car-prev-btn" class="p-2 text-cyan-400 hover:text-white active:scale-90 transition-transform"><i class="fa-solid fa-chevron-left text-lg"></i></button>
+                    
+                    <div class="flex flex-col items-center w-full px-2">
+                        <!-- Car Image Render Card -->
+                        <div class="relative w-40 sm:w-44 h-20 sm:h-24 rounded-lg mb-2 overflow-hidden flex items-center justify-center shadow-md border border-cyan-500/30 bg-slate-950">
+                            <img id="car-preview-img" src="" alt="Supercar" class="w-full h-full object-cover transition-all duration-300 transform hover:scale-105" onerror="this.onerror=null; this.src='https://placehold.co/300x160/0f172a/38bdf8?text=SUPER+CAR';">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent"></div>
+                            <span id="car-badge" class="absolute top-1 right-1 text-[9px] font-orbitron px-2 py-0.5 rounded bg-cyan-950/90 text-cyan-400 border border-cyan-500/50 font-bold">BMW M4</span>
+                        </div>
+
+                        <span id="car-name" class="font-orbitron font-extrabold text-xs sm:text-sm text-white tracking-wider">BMW M4 SPEEDSTER</span>
+                        <div class="flex items-center gap-3 text-[11px] text-gray-400 mt-1 font-orbitron">
+                            <span>SPD: <span id="car-stat-speed" class="text-cyan-400 font-bold">16</span></span>
+                            <span>HP: <span id="car-stat-hp" class="text-red-400 font-bold">3</span></span>
+                        </div>
+                    </div>
+
+                    <button id="car-next-btn" class="p-2 text-cyan-400 hover:text-white active:scale-90 transition-transform"><i class="fa-solid fa-chevron-right text-lg"></i></button>
+                </div>
+
+                <!-- UNLOCK / SELECT BUTTON -->
+                <button id="car-action-btn" class="w-full mt-3 py-2 px-4 rounded-lg font-orbitron font-bold text-xs transition-all flex items-center justify-center gap-2 bg-emerald-500 text-slate-950 hover:bg-emerald-400">
+                    SELECTED
+                </button>
+            </div>
+
+            <button id="start-btn" class="w-full py-3.5 sm:py-4 px-6 mb-4 sm:mb-6 rounded-xl font-orbitron font-bold text-sm sm:text-base text-slate-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-cyan-500/30 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i> START DRIVING
+            </button>
+
+            <div class="w-full space-y-1.5 sm:space-y-2 text-left text-xs text-gray-300 bg-slate-950/80 p-3 sm:p-4 rounded-xl border border-slate-800">
+                <div class="font-orbitron text-cyan-400 text-center mb-1.5 text-xs font-bold">CAR CONTROLS</div>
+                <div class="flex justify-between border-b border-slate-800 pb-1">
+                    <span>Steer Left / Right</span>
+                    <span class="font-bold text-white font-orbitron">A/D or Left/Right Arrow</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-800 pb-1">
+                    <span>Accelerate / Brake</span>
+                    <span class="font-bold text-white font-orbitron">W/S or Up/Down Arrow</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-800 pb-1">
+                    <span>Nitro Turbo Boost</span>
+                    <span class="font-bold text-white font-orbitron">SPACEBAR / SHIFT</span>
+                </div>
+                <div class="flex justify-between text-emerald-400">
+                    <span>Car Durability</span>
+                    <span class="font-bold font-orbitron">3 TOUCHES / REPAIRABLE</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div id="game-over-menu" class="absolute inset-0 z-40 flex flex-col justify-center items-center p-4 bg-slate-950/90 backdrop-blur-md hidden">
+        <div class="box-glow p-8 sm:p-10 rounded-2xl max-w-md w-full flex flex-col items-center text-center bg-slate-900/90 border-red-500/60">
+            <div class="inline-block p-4 rounded-full bg-red-950/80 border border-red-500/50 mb-3">
+                <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500 animate-bounce"></i>
+            </div>
+            <h2 id="game-over-title" class="font-orbitron text-2xl sm:text-3xl font-extrabold text-red-500 mb-1">
+                HIGHWAY CRASH!
+            </h2>
+            <p id="game-over-reason" class="text-gray-400 text-xs mb-6 font-orbitron">YOUR CAR WAS DESTROYED</p>
+
+            <div class="w-full bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-2 mb-6 font-orbitron text-xs">
+                <div class="flex justify-between text-gray-400">
+                    <span>FINAL SCORE</span>
+                    <span id="final-score" class="text-cyan-400 font-bold text-sm">0</span>
+                </div>
+                <div class="flex justify-between text-gray-400">
+                    <span>COINS BONUS</span>
+                    <span id="final-coins" class="text-yellow-400 font-bold text-sm">0</span>
+                </div>
+                <div class="flex justify-between text-gray-400 border-t border-slate-800 pt-2">
+                    <span>HIGH SCORE</span>
+                    <span id="final-hiscore" class="text-emerald-400 font-bold text-sm">0</span>
+                </div>
+            </div>
+
+            <button id="restart-btn" class="w-full py-4 px-6 rounded-xl font-orbitron font-bold text-sm text-slate-950 bg-gradient-to-r from-red-500 via-yellow-400 to-cyan-400 hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-cyan-500/30 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> RESTART RACE
+            </button>
+
+            <!-- RETURN TO LOBBY BUTTON -->
+            <button id="lobby-btn" class="w-full mt-3 py-3 px-6 rounded-xl font-orbitron font-bold text-sm text-cyan-400 bg-slate-950 border border-cyan-500/50 hover:bg-cyan-950/50 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-md">
+                <i class="fa-solid fa-house"></i> RETURN TO LOBBY
+            </button>
+        </div>
+    </div>
+
+    <!-- TOUCH CONTROLS FOR MOBILE -->
+    <div id="touch-controls" class="absolute bottom-4 left-0 right-0 z-30 px-6 flex justify-between items-end pointer-events-none md:hidden">
+        <div class="flex gap-2 pointer-events-auto">
+            <button id="btn-left" class="touch-btn w-16 h-16 rounded-2xl flex items-center justify-center text-cyan-400 text-2xl"><i class="fa-solid fa-caret-left"></i></button>
+            <button id="btn-right" class="touch-btn w-16 h-16 rounded-2xl flex items-center justify-center text-cyan-400 text-2xl"><i class="fa-solid fa-caret-right"></i></button>
+        </div>
+        <div class="flex gap-2 pointer-events-auto">
+            <button id="btn-brake" class="touch-btn w-14 h-14 rounded-2xl flex items-center justify-center text-red-400 text-xl font-orbitron">B</button>
+            <button id="btn-gas" class="touch-btn w-16 h-16 rounded-2xl flex items-center justify-center text-emerald-400 text-2xl"><i class="fa-solid fa-gas-pump"></i></button>
+        </div>
+    </div>
+
+    <!-- AUDIO TOGGLE -->
+    <button id="audio-toggle" class="absolute top-4 right-4 z-40 p-3 rounded-full bg-slate-900/80 border border-slate-700 text-cyan-400 hover:text-white transition-colors">
+        <i id="audio-icon" class="fa-solid fa-volume-high"></i>
+    </button>
+
+    <script>
+        // --- SYNTH AUDIO SYSTEM ---
+        let audioEnabled = true;
+        let audioCtx = null;
+        let engineOsc = null;
+        let engineGain = null;
+
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+
+                engineOsc = audioCtx.createOscillator();
+                engineGain = audioCtx.createGain();
+                engineOsc.type = 'sawtooth';
+                engineOsc.frequency.setValueAtTime(55, audioCtx.currentTime);
+                engineGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                engineOsc.connect(engineGain);
+                engineGain.connect(audioCtx.destination);
+                engineOsc.start();
+            } catch (e) {}
+        }
+
+        function updateEngineSound(speedRatio) {
+            if (!audioCtx || !audioEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                engineOsc.frequency.setTargetAtTime(55 + speedRatio * 160, audioCtx.currentTime, 0.1);
+                engineGain.gain.setTargetAtTime(speedRatio > 0.05 ? 0.05 : 0.01, audioCtx.currentTime, 0.1);
+            } catch (e) {}
+        }
+
+        function playSound(type) {
+            if (!audioEnabled || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+
+                if (type === 'coin') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.setValueAtTime(1320, now + 0.08);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.25);
+                } else if (type === 'fuel') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.linearRampToValueAtTime(880, now + 0.2);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.2);
+                } else if (type === 'crash') {
+                    const bufferSize = audioCtx.sampleRate * 0.4;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+                    const gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    noise.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    noise.start();
+                } else if (type === 'magnet') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.linearRampToValueAtTime(850, now + 0.35);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.35);
+                } else if (type === 'shield') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(900, now + 0.3);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.3);
+                }
+            } catch (e) {}
+        }
+
+        document.getElementById('audio-toggle').addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            document.getElementById('audio-icon').className = audioEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+            if (engineGain) engineGain.gain.setValueAtTime(audioEnabled ? 0.05 : 0, audioCtx.currentTime);
+        });
+
+        // --- GAME ENGINE & SETUP ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let isGameRunning = false;
+        let score = 0;
+        let coinsCollected = 0;
+        let totalCoins = parseInt(localStorage.getItem('highway_speedster_coins') || '0');
+        let highScore = localStorage.getItem('highway_speedster_hiscore') || 0;
+
+        // ROAD & INPUT STATE DEFINITIONS
+        const NUM_LANES = 4;
+        let roadWidth = 0;
+        let roadLeft = 0;
+        let laneWidth = 0;
+        let roadOffset = 0;
+
+        const keys = {
+            left: false,
+            right: false,
+            up: false,
+            down: false,
+            boost: false
+        };
+
+        // GARAGE CAR DATA SYSTEM WITH BMW & LAMBORGHINI & FERRARI & BUGATTI
+        const CAR_SHOP = [
+            { id: 0, name: 'BMW M4 COUPE', color: '#1e40af', accent: '#60a5fa', maxSpeed: 16, hp: 3, cost: 0, badge: 'BMW', img: 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=400&q=80' },
+            { id: 1, name: 'LAMBORGHINI HURACÁN', color: '#eab308', accent: '#ffffff', maxSpeed: 19, hp: 3, cost: 30, badge: 'LAMBO', img: 'https://images.unsplash.com/photo-1544829099-b9a0c07fad1a?auto=format&fit=crop&w=400&q=80' },
+            { id: 2, name: 'FERRARI F8 TRIBUTO', color: '#dc2626', accent: '#fef08a', maxSpeed: 18, hp: 4, cost: 60, badge: 'FERRARI', img: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=400&q=80' },
+            { id: 3, name: 'BUGATTI CHIRON', color: '#0284c7', accent: '#f8fafc', maxSpeed: 22, hp: 4, cost: 120, badge: 'BUGATTI', img: 'https://images.unsplash.com/photo-1600793575654-910699b5e4d4?auto=format&fit=crop&w=400&q=80' }
+        ];
+
+        let unlockedCars = JSON.parse(localStorage.getItem('highway_speedster_unlocked_cars') || '[0]');
+        let selectedCarIndex = parseInt(localStorage.getItem('highway_speedster_selected_car') || '0');
+        let currentPreviewIndex = selectedCarIndex;
+
+        // Player Car
+        const player = {
+            x: 0,
+            y: 0,
+            width: 50,
+            height: 95,
+            speed: 0,
+            maxSpeed: 16,
+            accel: 0.3,
+            decel: 0.15,
+            steerSpeed: 7,
+            fuel: 100,
+            shield: false,
+            magnetTimer: 0,
+            angle: 0,
+            hp: 3,
+            maxHp: 3,
+            invincibleTimer: 0
+        };
+
+        // UI GARAGE CONTROLS
+        function updateGarageUI() {
+            const car = CAR_SHOP[currentPreviewIndex];
+            document.getElementById('menu-total-coins').innerText = totalCoins;
+            document.getElementById('car-name').innerText = car.name;
+            document.getElementById('car-preview-img').src = car.img;
+            document.getElementById('car-badge').innerText = car.badge;
+            document.getElementById('car-stat-speed').innerText = car.maxSpeed * 12;
+            document.getElementById('car-stat-hp').innerText = car.hp;
+
+            const actionBtn = document.getElementById('car-action-btn');
+            const isUnlocked = unlockedCars.includes(car.id);
+
+            if (isUnlocked) {
+                if (selectedCarIndex === currentPreviewIndex) {
+                    actionBtn.innerText = "✓ SELECTED";
+                    actionBtn.className = "w-full mt-3 py-2 px-4 rounded-lg font-orbitron font-bold text-xs bg-emerald-500 text-slate-950 cursor-default shadow-md shadow-emerald-500/20";
+                } else {
+                    actionBtn.innerText = "DRIVE THIS CAR";
+                    actionBtn.className = "w-full mt-3 py-2 px-4 rounded-lg font-orbitron font-bold text-xs bg-cyan-500 hover:bg-cyan-400 text-slate-950 active:scale-95 transition-all shadow-md shadow-cyan-500/20";
+                }
+            } else {
+                actionBtn.innerHTML = `<i class="fa-solid fa-lock mr-1"></i> UNLOCK (${car.cost} COINS)`;
+                if (totalCoins >= car.cost) {
+                    actionBtn.className = "w-full mt-3 py-2 px-4 rounded-lg font-orbitron font-bold text-xs bg-yellow-400 hover:bg-yellow-300 text-slate-950 active:scale-95 transition-all shadow-md shadow-yellow-500/20";
+                } else {
+                    actionBtn.className = "w-full mt-3 py-2 px-4 rounded-lg font-orbitron font-bold text-xs bg-slate-800 text-gray-500 border border-slate-700 cursor-not-allowed";
+                }
+            }
+        }
+
+        document.getElementById('car-prev-btn').addEventListener('click', () => {
+            currentPreviewIndex = (currentPreviewIndex - 1 + CAR_SHOP.length) % CAR_SHOP.length;
+            updateGarageUI();
+        });
+
+        document.getElementById('car-next-btn').addEventListener('click', () => {
+            currentPreviewIndex = (currentPreviewIndex + 1) % CAR_SHOP.length;
+            updateGarageUI();
+        });
+
+        document.getElementById('car-action-btn').addEventListener('click', () => {
+            const car = CAR_SHOP[currentPreviewIndex];
+            const isUnlocked = unlockedCars.includes(car.id);
+
+            if (isUnlocked) {
+                selectedCarIndex = currentPreviewIndex;
+                localStorage.setItem('highway_speedster_selected_car', selectedCarIndex);
+            } else if (totalCoins >= car.cost) {
+                totalCoins -= car.cost;
+                localStorage.setItem('highway_speedster_coins', totalCoins);
+                unlockedCars.push(car.id);
+                localStorage.setItem('highway_speedster_unlocked_cars', JSON.stringify(unlockedCars));
+                selectedCarIndex = currentPreviewIndex;
+                localStorage.setItem('highway_speedster_selected_car', selectedCarIndex);
+                playSound('coin');
+            }
+            updateGarageUI();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = false;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = false;
+            if (e.key === ' ' || e.key === 'Shift') keys.boost = false;
+        });
+
+        // ADD KEYDOWN LISTENER TO PROPERLY CAPTURE MOVEMENTS
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') keys.up = true;
+            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') keys.down = true;
+            if (e.key === ' ' || e.key === 'Shift') keys.boost = true;
+        });
+
+        function bindTouch(id, keyProp) {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            const setKey = (val) => { keys[keyProp] = val; };
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); setKey(true); });
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); setKey(false); });
+            btn.addEventListener('mousedown', () => setKey(true));
+            btn.addEventListener('mouseup', () => setKey(false));
+            btn.addEventListener('mouseleave', () => setKey(false));
+        }
+
+        function playSound(type) {
+            if (!audioEnabled || !audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const now = audioCtx.currentTime;
+
+                if (type === 'coin') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.setValueAtTime(1320, now + 0.08);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.25);
+                } else if (type === 'fuel' || type === 'repair') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.linearRampToValueAtTime(880, now + 0.2);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.2);
+                } else if (type === 'crash' || type === 'hit') {
+                    const bufferSize = audioCtx.sampleRate * 0.4;
+                    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+                    const noise = audioCtx.createBufferSource();
+                    noise.buffer = buffer;
+                    const gain = audioCtx.createGain();
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    noise.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    noise.start();
+                } else if (type === 'magnet') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.linearRampToValueAtTime(850, now + 0.35);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.35);
+                } else if (type === 'shield') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(900, now + 0.3);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(now + 0.3);
+                }
+            } catch (e) {}
+        }
+        bindTouch('btn-left', 'left');
+        bindTouch('btn-right', 'right');
+        bindTouch('btn-gas', 'up');
+        bindTouch('btn-brake', 'down');
+
+        // Dynamic Entities
+        let traffic = [];
+        let items = [];
+        let particles = [];
+
+        function updateRoadDimensions() {
+            roadWidth = Math.min(canvas.width * 0.85, 480);
+            roadLeft = (canvas.width - roadWidth) / 2;
+            laneWidth = roadWidth / NUM_LANES;
+        }
+
+        // --- CAR RENDERING FUNCTIONS ---
+        function drawPlayerCar(x, y, angle, isShielded) {
+            // Invincibility visual flickering (every 6 frames when damaged)
+            if (player.invincibleTimer > 0 && Math.floor(player.invincibleTimer / 6) % 2 === 0) {
+                return;
+            }
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+
+            // Magnet Attraction Field Aura
+            if (player.magnetTimer > 0) {
+                ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = '#a855f7';
+                ctx.shadowBlur = 20;
+                ctx.setLineDash([8, 8]);
+                ctx.beginPath();
+                ctx.arc(0, 0, player.height * 0.85, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Shield Glow Bubble
+            if (isShielded) {
+                ctx.strokeStyle = '#ec4899';
+                ctx.lineWidth = 4;
+                ctx.shadowColor = '#ec4899';
+                ctx.shadowBlur = 18;
+                ctx.beginPath();
+                ctx.arc(0, 0, player.height * 0.65, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Damage Smoke / Spark Particles if damaged
+            if (player.hp < 3) {
+                ctx.fillStyle = player.hp === 1 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(156, 163, 175, 0.5)';
+                ctx.beginPath();
+                ctx.arc((Math.random() - 0.5) * 20, -player.height / 2 + 10, Math.random() * 6 + 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Exhaust Flames / Smoke Particles
+            if (player.speed > 2) {
+                ctx.fillStyle = player.speed > 14 ? '#ec4899' : '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(-14, player.height / 2 + 6, Math.random() * 4 + 3, 0, Math.PI * 2);
+                ctx.arc(14, player.height / 2 + 6, Math.random() * 4 + 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Wheels
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(-player.width / 2 - 4, -player.height / 2 + 10, 7, 18);
+            ctx.fillRect(player.width / 2 - 3, -player.height / 2 + 10, 7, 18);
+            ctx.fillRect(-player.width / 2 - 4, player.height / 2 - 28, 7, 18);
+            ctx.fillRect(player.width / 2 - 3, player.height / 2 - 28, 7, 18);
+
+            // Car Body Shadow
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetY = 6;
+
+            // CUSTOM MODEL RENDERING FOR SELECTED SUPERCARS
+            const activeCar = CAR_SHOP[selectedCarIndex] || CAR_SHOP[0];
+            const bodyColor = player.hp === 1 ? '#b91c1c' : activeCar.color;
+            ctx.fillStyle = bodyColor;
+
+            if (activeCar.id === 1) { 
+                // LAMBORGHINI HURACÁN - Sharp Wedge Supercar Shape with Rear Spoiler
+                ctx.beginPath();
+                ctx.moveTo(0, -player.height / 2);
+                ctx.lineTo(player.width / 2, -player.height / 4);
+                ctx.lineTo(player.width / 2 + 2, player.height / 2 - 10);
+                ctx.lineTo(-player.width / 2 - 2, player.height / 2 - 10);
+                ctx.lineTo(-player.width / 2, -player.height / 4);
+                ctx.closePath();
+                ctx.fill();
+
+                // Rear Spoiler Wing
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(-player.width / 2 - 4, player.height / 2 - 8, player.width + 8, 6);
+            } else if (activeCar.id === 2) { 
+                // FERRARI F8 TRIBUTO - Curved Aerodynamic Race Silhouette
+                ctx.beginPath();
+                ctx.roundRect(-player.width / 2 - 1, -player.height / 2 + 4, player.width + 2, player.height - 8, 16);
+                ctx.fill();
+
+                // Dual Bonnet Air Vents
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(-12, -player.height / 4, 8, 12);
+                ctx.fillRect(4, -player.height / 4, 8, 12);
+            } else if (activeCar.id === 3) { 
+                // BUGATTI CHIRON - Wide Hypercar Body with C-Bar Curved Accents
+                ctx.beginPath();
+                ctx.roundRect(-player.width / 2 - 4, -player.height / 2, player.width + 8, player.height, 10);
+                ctx.fill();
+
+                // Distinct Dual Tone C-Curve Stripe
+                ctx.strokeStyle = activeCar.accent;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(-4, 0, 22, -Math.PI / 2, Math.PI / 2);
+                ctx.arc(4, 0, 22, -Math.PI / 2, Math.PI / 2);
+                ctx.stroke();
+            } else { 
+                // BMW M4 COUPE - Classic Sports Coupe with Racing Stripes
+                ctx.beginPath();
+                ctx.roundRect(-player.width / 2, -player.height / 2, player.width, player.height, 12);
+                ctx.fill();
+
+                // Double Racing Stripe
+                ctx.fillStyle = activeCar.accent;
+                ctx.fillRect(-6, -player.height / 2, 4, player.height);
+                ctx.fillRect(2, -player.height / 2, 4, player.height);
+            }
+
+            // Roof & Cockpit Windshield
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.roundRect(-player.width / 2 + 6, -player.height / 2 + 22, player.width - 12, player.height - 42, 6);
+            ctx.fill();
+
+            // Windshield Glass Reflections
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(-player.width / 2 + 9, -player.height / 2 + 26, player.width - 18, 14);
+
+            // Headlights (Beam Forward)
+            ctx.fillStyle = '#fef08a';
+            ctx.shadowColor = '#fef08a';
+            ctx.shadowBlur = 15;
+            ctx.fillRect(-player.width / 2 + 5, -player.height / 2 + 2, 9, 6);
+            ctx.fillRect(player.width / 2 - 14, -player.height / 2 + 2, 9, 6);
+
+            // Rear Brake Lights
+            ctx.fillStyle = '#dc2626';
+            ctx.shadowColor = '#dc2626';
+            ctx.shadowBlur = 10;
+            ctx.fillRect(-player.width / 2 + 6, player.height / 2 - 6, 10, 4);
+            ctx.fillRect(player.width / 2 - 16, player.height / 2 - 6, 10, 4);
+
+            ctx.restore();
+        }
+
+        function drawTrafficCar(car) {
+            ctx.save();
+            ctx.translate(car.x, car.y);
+
+            // Wheels
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-car.width / 2 - 3, -car.height / 2 + 8, 6, 16);
+            ctx.fillRect(car.width / 2 - 3, -car.height / 2 + 8, 6, 16);
+            ctx.fillRect(-car.width / 2 - 3, car.height / 2 - 24, 6, 16);
+            ctx.fillRect(car.width / 2 - 3, car.height / 2 - 24, 6, 16);
+
+            // Vehicle Body
+            ctx.fillStyle = car.color;
+            ctx.beginPath();
+            ctx.roundRect(-car.width / 2, -car.height / 2, car.width, car.height, 8);
+            ctx.fill();
+
+            // Cabin Window
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-car.width / 2 + 5, -car.height / 2 + 20, car.width - 10, car.height - 38);
+
+            // Tail lights
+            ctx.fillStyle = '#f43f5e';
+            ctx.fillRect(-car.width / 2 + 4, car.height / 2 - 4, 8, 3);
+            ctx.fillRect(car.width / 2 - 12, car.height / 2 - 4, 8, 3);
+
+            ctx.restore();
+        }
+
+        // --- SPAWNING LOGIC ---
+        function spawnTraffic() {
+            if (traffic.length < 5 && Math.random() < 0.035) {
+                const lane = Math.floor(Math.random() * NUM_LANES);
+                const laneX = roadLeft + lane * laneWidth + laneWidth / 2;
+                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#64748b'];
+                traffic.push({
+                    x: laneX,
+                    y: -120,
+                    width: 46,
+                    height: 85,
+                    speed: Math.random() * 2 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+            }
+        }
+
+        function spawnItems() {
+            if (items.length < 4 && Math.random() < 0.025) {
+                const lane = Math.floor(Math.random() * NUM_LANES);
+                const laneX = roadLeft + lane * laneWidth + laneWidth / 2;
+                const types = ['coin', 'coin', 'coin', 'fuel', 'shield', 'repair', 'magnet'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                items.push({
+                    x: laneX,
+                    y: -60,
+                    type: type,
+                    radius: 16
+                });
+            }
+        }
+
+        function createExplosion(x, y) {
+            for (let i = 0; i < 35; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 7 + 2;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1.0,
+                    color: ['#ef4444', '#f59e0b', '#facc15', '#ffffff'][Math.floor(Math.random() * 4)],
+                    size: Math.random() * 5 + 3
+                });
+            }
+        }
+
+        // --- UPDATE & PHYSICS ---
+        function update() {
+            updateRoadDimensions();
+
+            // Decrement Invincibility Timer
+            if (player.invincibleTimer > 0) {
+                player.invincibleTimer--;
+            }
+
+            // Decrement Magnet Timer (5 seconds = 300 frames at 60fps)
+            if (player.magnetTimer > 0) {
+                player.magnetTimer--;
+            }
+
+            // Speed Control (Auto Cruising + Manual Gas/Brake Response)
+            let targetMaxSpeed = keys.boost ? player.maxSpeed * 1.4 : player.maxSpeed;
+            
+            // Auto acceleration baseline + rapid response when pressing UP/W
+            if (keys.up) {
+                player.speed = Math.min(player.speed + player.accel * 2.5, targetMaxSpeed);
+            } else if (keys.down) {
+                player.speed = Math.max(player.speed - player.decel * 3, 0);
+            } else {
+                // Keep smooth auto-cruise driving at 65% base speed if no key pressed
+                let cruiseSpeed = player.maxSpeed * 0.65;
+                if (player.speed < cruiseSpeed) {
+                    player.speed = Math.min(player.speed + player.accel * 1.5, cruiseSpeed);
+                } else if (player.speed > cruiseSpeed) {
+                    player.speed = Math.max(player.speed - player.decel, cruiseSpeed);
+                }
+            }
+
+            // Steering & Rotation physics
+            player.angle = 0;
+            if (player.speed > 0.5) {
+                if (keys.left) {
+                    player.x -= player.steerSpeed;
+                    player.angle = -0.12;
+                }
+                if (keys.right) {
+                    player.x += player.steerSpeed;
+                    player.angle = 0.12;
+                }
+            }
+
+            // Keep player inside road boundaries
+            player.x = Math.max(roadLeft + player.width / 2 + 5, Math.min(roadLeft + roadWidth - player.width / 2 - 5, player.x));
+
+            // Road vertical scrolling
+            roadOffset += player.speed * 3.5;
+            if (roadOffset >= 80) roadOffset = 0;
+
+            // Fuel depletion
+            if (player.speed > 0) {
+                player.fuel -= (player.speed / player.maxSpeed) * 0.05;
+                if (player.fuel <= 0) {
+                    player.fuel = 0;
+                    gameOver("FUEL EXHAUSTED!");
+                    return;
+                }
+            }
+
+            // Update Audio pitch
+            updateEngineSound(player.speed / player.maxSpeed);
+
+            // Update Score & Distance
+            score += Math.floor(player.speed * 0.5);
+
+            // Update Traffic Cars
+            spawnTraffic();
+            for (let i = traffic.length - 1; i >= 0; i--) {
+                const t = traffic[i];
+                t.y += player.speed - t.speed;
+
+                // Collision Detection with Player
+                if (Math.abs(t.x - player.x) < (t.width / 2 + player.width / 2 - 6) &&
+                    Math.abs(t.y - player.y) < (t.height / 2 + player.height / 2 - 8)) {
+                    
+                    if (player.shield) {
+                        player.shield = false;
+            player.magnetTimer = 0;
+                        createExplosion(t.x, t.y);
+                        traffic.splice(i, 1);
+                        playSound('crash');
+                        continue;
+                    } 
+                    
+                    // 3-Hit System: Check if player is not currently invincible
+                    if (player.invincibleTimer <= 0) {
+                        player.hp--;
+                        createExplosion(t.x, t.y);
+                        traffic.splice(i, 1);
+
+                        if (player.hp <= 0) {
+                            createExplosion(player.x, player.y);
+                            playSound('crash');
+                            gameOver("CAR DESTROYED (3 TOUCHES)!");
+                            return;
+                        } else {
+                            playSound('hit');
+                            player.invincibleTimer = 90; // ~1.5 seconds invincibility (60fps * 1.5)
+                            player.speed = Math.max(player.speed * 0.4, 3); // Slow down slightly on hit
+                        }
+                    }
+                }
+
+                if (t.y > canvas.height + 150) traffic.splice(i, 1);
+            }
+
+            // Update Collectible Items
+            spawnItems();
+            for (let i = items.length - 1; i >= 0; i--) {
+                const it = items[i];
+                it.y += player.speed;
+
+                // Coin Magnet Attraction physics (pulls coins towards player)
+                if (player.magnetTimer > 0 && it.type === 'coin') {
+                    const dx = player.x - it.x;
+                    const dy = player.y - it.y;
+                    const distToPlayer = Math.hypot(dx, dy);
+                    if (distToPlayer < 450) {
+                        it.x += (dx / distToPlayer) * 14;
+                        it.y += (dy / distToPlayer) * 14;
+                    }
+                }
+
+                const dist = Math.hypot(it.x - player.x, it.y - player.y);
+                if (dist < it.radius + player.width / 2) {
+                    if (it.type === 'coin') {
+                        coinsCollected += 1;
+                        score += 250;
+                        playSound('coin');
+                    } else if (it.type === 'fuel') {
+                        player.fuel = Math.min(100, player.fuel + 35);
+                        playSound('fuel');
+                    } else if (it.type === 'shield') {
+                        player.shield = true;
+                        playSound('shield');
+                    } else if (it.type === 'repair') {
+                        player.hp = Math.min(player.maxHp, player.hp + 1);
+                        playSound('repair');
+                    } else if (it.type === 'magnet') {
+                        player.magnetTimer = 300; // 5 seconds at 60 FPS
+                        playSound('magnet');
+                    }
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                if (it.y > canvas.height + 100) items.splice(i, 1);
+            }
+
+            // Update Particle Explosion Physics
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.03;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // Update HUD text & gauges
+            document.getElementById('speed-display').innerText = `${Math.floor(player.speed * 12)} KM/H`;
+            document.getElementById('speed-bar').style.width = `${(player.speed / (player.maxSpeed * 1.4)) * 100}%`;
+            
+            // DYNAMIC FUEL BAR COLOR CHANGING LOGIC
+            const fuelBar = document.getElementById('fuel-bar');
+            fuelBar.style.width = `${player.fuel}%`;
+            if (player.fuel <= 30) {
+                fuelBar.className = "h-full bg-gradient-to-r from-red-500 to-rose-600 rounded-full transition-all animate-pulse";
+            } else if (player.fuel <= 50) {
+                fuelBar.className = "h-full bg-gradient-to-r from-yellow-400 to-amber-500 rounded-full transition-all";
+            } else {
+                fuelBar.className = "h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all";
+            }
+
+            document.getElementById('fuel-text').innerText = `${Math.ceil(player.fuel)}%`;
+            document.getElementById('score-display').innerText = score.toString().padStart(5, '0');
+            document.getElementById('coin-display').innerText = coinsCollected;
+            document.getElementById('hiscore-display').innerText = highScore;
+
+            // Render Lives (Hearts) in HUD
+            const livesContainer = document.getElementById('lives-container');
+            let heartsHtml = '';
+            for (let h = 0; h < player.maxHp; h++) {
+                if (h < player.hp) {
+                    heartsHtml += '<i class="fa-solid fa-heart text-red-500"></i>';
+                } else {
+                    heartsHtml += '<i class="fa-solid fa-heart text-slate-700"></i>';
+                }
+            }
+            livesContainer.innerHTML = heartsHtml;
+
+            const shieldHud = document.getElementById('shield-hud');
+            if (player.shield) {
+                shieldHud.classList.remove('opacity-40');
+                document.getElementById('shield-text').innerText = 'ACTIVE';
+            } else {
+                shieldHud.classList.add('opacity-40');
+                document.getElementById('shield-text').innerText = 'OFFLINE';
+            }
+
+            // Update Magnet HUD Loader & Timer Animation
+            const magnetHud = document.getElementById('magnet-hud');
+            const magnetLoaderBar = document.getElementById('magnet-loader-bar');
+            const magnetTimerText = document.getElementById('magnet-timer-text');
+            if (player.magnetTimer > 0) {
+                magnetHud.classList.remove('opacity-40');
+                const remainingSecs = (player.magnetTimer / 60).toFixed(1);
+                magnetTimerText.innerText = `${remainingSecs}s`;
+                magnetLoaderBar.style.width = `${(player.magnetTimer / 300) * 100}%`;
+            } else {
+                magnetHud.classList.add('opacity-40');
+                magnetTimerText.innerText = 'OFFLINE';
+                magnetLoaderBar.style.width = '0%';
+            }
+        }
+
+        // --- RENDER GAME ---
+        function render() {
+            ctx.fillStyle = '#090d16'; // Off-road Terrain
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Road Surface (Asphalt)
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(roadLeft, 0, roadWidth, canvas.height);
+
+            // Draw Road Shoulder Guard Rails
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(roadLeft - 8, 0, 8, canvas.height);
+            ctx.fillRect(roadLeft + roadWidth, 0, 8, canvas.height);
+
+            // Draw Scrolling White Dashed Lane Markings
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([30, 30]);
+            ctx.lineDashOffset = -roadOffset;
+
+            for (let i = 1; i < NUM_LANES; i++) {
+                ctx.beginPath();
+                ctx.moveTo(roadLeft + i * laneWidth, -60);
+                ctx.lineTo(roadLeft + i * laneWidth, canvas.height + 60);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]); // Reset line dash
+
+            // Draw Items
+            for (let it of items) {
+                ctx.save();
+                ctx.translate(it.x, it.y);
+                if (it.type === 'coin') {
+                    ctx.fillStyle = '#facc15';
+                    ctx.shadowColor = '#eab308';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, it.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#78350f';
+                    ctx.font = 'bold 12px Orbitron';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('$', 0, 1);
+                } else if (it.type === 'fuel') {
+                    ctx.fillStyle = '#10b981';
+                    ctx.shadowColor = '#10b981';
+                    ctx.shadowBlur = 10;
+                    ctx.fillRect(-12, -14, 24, 28);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 10px Orbitron';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('GAS', 0, 1);
+                } else if (it.type === 'shield') {
+                    ctx.fillStyle = '#ec4899';
+                    ctx.shadowColor = '#ec4899';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, it.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 10px Orbitron';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('S', 0, 1);
+                } else if (it.type === 'repair') {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.shadowColor = '#ef4444';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, it.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 11px Orbitron';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('FIX', 0, 1);
+                } else if (it.type === 'magnet') {
+                    ctx.fillStyle = '#a855f7';
+                    ctx.shadowColor = '#c084fc';
+                    ctx.shadowBlur = 14;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, it.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 11px Orbitron';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('MAG', 0, 1);
+                }
+                ctx.restore();
+            }
+
+            // Draw Traffic
+            for (let t of traffic) drawTrafficCar(t);
+
+            // Draw Player Car
+            if (isGameRunning) drawPlayerCar(player.x, player.y, player.angle, player.shield);
+
+            // Draw Explosion Particles
+            for (let p of particles) {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- START / RESTART GAME ---
+        function startGame() {
+            updateRoadDimensions();
+            score = 0;
+            coinsCollected = 0;
+            traffic = [];
+            items = [];
+            particles = [];
+
+            // Apply Selected Car Stats
+            const activeCar = CAR_SHOP[selectedCarIndex] || CAR_SHOP[0];
+            player.maxSpeed = activeCar.maxSpeed;
+            player.hp = activeCar.hp;
+            player.maxHp = activeCar.hp;
+
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 140;
+            player.speed = 0;
+            player.fuel = 100;
+            player.shield = false;
+            player.magnetTimer = 0;
+            player.invincibleTimer = 0;
+
+            initAudio();
+
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-over-menu').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+
+            isGameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver(reason = "HIGHWAY CRASH!") {
+            isGameRunning = false;
+
+            // Save Total Collected Coins to Persistent Storage
+            totalCoins += coinsCollected;
+            localStorage.setItem('highway_speedster_coins', totalCoins);
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highway_speedster_hiscore', highScore);
+            }
+
+            document.getElementById('game-over-reason').innerText = reason;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('final-coins').innerText = coinsCollected * 250;
+            document.getElementById('final-hiscore').innerText = highScore;
+
+            updateGarageUI();
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('game-over-menu').classList.remove('hidden');
+        }
+
+        function gameLoop() {
+            if (isGameRunning) {
+                update();
+                render();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        // RETURN TO LOBBY LISTENER
+        document.getElementById('lobby-btn').addEventListener('click', () => {
+            document.getElementById('game-over-menu').classList.add('hidden');
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('main-menu').classList.remove('hidden');
+            updateGarageUI();
+        });
+
+        window.onload = function() {
+            updateRoadDimensions();
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 140;
+            updateGarageUI();
+            render();
+        };
+    </script>
+</body>
+</html>
